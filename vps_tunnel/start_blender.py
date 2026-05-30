@@ -3,7 +3,16 @@
 Run on the remote Windows machine alongside start_all.py.
 
 Usage: python start_blender.py --vps 49.233.189.223 --vps-pass YOUR_VPS_PASSWORD
-Then on Mac, configure Claude to connect MCP at http://VPS_IP:9876/sse
+
+Then on Mac, add to ~/.claude/settings.json:
+{
+  "mcpServers": {
+    "blender": {
+      "command": "python3",
+      "args": ["<path>/blender_mcp_bridge.py", "--host", "49.233.189.223", "--port", "9876"]
+    }
+  }
+}
 """
 
 import subprocess
@@ -30,4 +39,4 @@ subprocess.Popen(
     creationflags=flags,
 )
 print(f"[+] Blender MCP tunnel: VPS:{args.vps_port} -> localhost:{args.blender_port}")
-print(f"[+] Mac Claude MCP URL: http://{args.vps}:{args.vps_port}/sse")
+print(f"[+] Mac Claude MCP: python3 blender_mcp_bridge.py --host {args.vps} --port {args.vps_port}")

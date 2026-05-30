@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "blender": {
+      "command": "python3",
+      "args": ["/Users/bytedance/claudework/wo/remote_win/vps_tunnel/blender_mcp_bridge.py", "--host", "49.233.189.223", "--port", "9876"]
+    }
+  }
+}
