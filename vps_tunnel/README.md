@@ -5,51 +5,93 @@
 ```
 ┌──────────┐                ┌──────────┐  SSH反向隧道  ┌──────────────┐
 │   Mac    │ ──── HTTP ───> │   VPS    │ <─────────── │  远程 Windows │
-│  浏览器   │               │  :9090   │  ──────────> │  Web控制面板   │
-└──────────┘                └──────────┘              │  :8080       │
+│ 浏览器/CLI│               │:9090/9876│  ──────────> │ Web面板/Blender│
+└──────────┘                └──────────┘              │ :8080 / :9876│
                                                       └──────────────┘
 ```
 
-## 部署步骤
+## 快速使用
+
+### 远程 Windows 每次开机执行：
+
+```bash
+cd E:\code\othercode\remote_win\vps_tunnel
+
+# Web 控制面板 + 隧道
+python start_all.py --vps 49.233.189.223 --vps-pass haoning --password haoning
+
+# Blender MCP 隧道（需先打开 Blender 和 blender-mcp）
+python start_blender.py --vps 49.233.189.223 --vps-pass haoning
+```
+
+### Mac 浏览器控制：
+
+打开 http://49.233.189.223:9090 ，密码 `haoning`
+
+### Mac Claude CLI 控制：
+
+```bash
+export REMOTE_SERVER=http://49.233.189.223:9090
+export REMOTE_PASSWORD=haoning
+python cli.py shell "dir C:\\"
+python cli.py screenshot
+python cli.py download "C:\file.txt"
+python cli.py upload local.txt "C:\remote.txt"
+python cli.py ps
+python cli.py kill 1234
+python cli.py sysinfo
+python cli.py files "C:\\"
+```
+
+### Mac Claude 连接 Blender MCP：
+
+在 `~/.claude/settings.json` 中添加：
+```json
+{
+  "mcpServers": {
+    "blender": {
+      "url": "http://49.233.189.223:9876/sse"
+    }
+  }
+}
+```
+
+## 首次部署
 
 ### 1. 配置 VPS（一次性）
-
-在任意能 SSH 到 VPS 的机器上运行：
 
 ```bash
 pip install paramiko
 python setup_vps.py --host VPS的IP --password VPS的SSH密码
 ```
 
-### 2. 远程 Windows
-
-把 `app.py`、`tunnel.py`、`start_all.py` 拷到远程，然后：
+### 2. 远程 Windows 安装依赖（一次性）
 
 ```bash
 pip install flask paramiko
-python start_all.py --vps VPS的IP --vps-pass VPS的SSH密码 --password 网页登录密码
 ```
 
-### 3. Mac 访问
+### 3. 开机自启（可选）
 
-浏览器打开 `http://VPS的IP:9090`，输入密码登录。
-
-功能：
-- **Terminal** — 远程执行 PowerShell/CMD 命令，带命令历史
-- **Files** — 文件浏览器，上传/下载文件
-- **Processes** — 进程列表，搜索和一键 Kill
-- **System** — 系统信息 + 远程截屏
+```powershell
+$action = New-ScheduledTaskAction -Execute "python" -Argument "E:\code\othercode\remote_win\vps_tunnel\start_all.py --vps 49.233.189.223 --vps-pass haoning --password haoning"
+$trigger = New-ScheduledTaskTrigger -AtStartup
+Register-ScheduledTask -TaskName "RemoteControl" -Action $action -Trigger $trigger -RunLevel Highest
+```
 
 ## 文件说明
 
 | 文件 | 运行在 | 说明 |
 |------|--------|------|
 | `app.py` | 远程 Windows | Web 控制面板（Flask） |
-| `tunnel.py` | 远程 Windows | SSH 反向隧道，连接 VPS |
+| `tunnel.py` | 远程 Windows | SSH 反向隧道 |
 | `start_all.py` | 远程 Windows | 一键启动 app + tunnel |
-| `setup_vps.py` | 任意机器 | 一次性配置 VPS 的 sshd 和 nginx |
+| `start_blender.py` | 远程 Windows | 启动 Blender MCP 隧道 |
+| `cli.py` | Mac | Claude CLI 控制远程 |
+| `setup_vps.py` | 任意机器 | 一次性配置 VPS |
 
 ## 依赖
 
 - 远程 Windows：`flask`、`paramiko`
-- VPS：已安装 `sshd`（默认有），可选 `nginx`
+- Mac：`requests`
+- VPS：`sshd`（默认有），可选 `nginx`
