@@ -8,9 +8,10 @@
 ## 链路架构
 
 ```
-Mac ──► VPS (49.233.189.223, Linux 跳板) ──► Windows (Blender 3.6.x)
+Mac ──► VPS (49.233.189.223, Linux 跳板) ──► Windows (Blender 3.6.x / RTX 4090)
          │  22    SSH 跳板（常通）
-         │  9090  Web 面板隧道（app.py，常驻）
+         │  9090  Web 面板隧道（app.py，常驻）── Blender 工作专用
+         │  9091  Web 面板隧道（app.py 第二实例）── SFT 训练专用（见下）
          │  9876  BlenderMCP 隧道（绑 Blender，易掉）
 ```
 
@@ -54,6 +55,39 @@ python cli.py sysinfo
   }
 }
 ```
+
+---
+
+## 训练专用通道（9091，与 Blender 的 9090 隔离）
+
+给 GPU 训练任务（agentpre SFT 等）单开的第二个面板实例：远端 Windows 本地
+监听 **8081**，反挂到 **VPS:9091**。与 9090 互不干扰——两边长任务/重启面板
+互相不影响。
+
+**远端 Windows 启动（开机后或 9091 掉线时执行）**：
+
+```bash
+python E:\code\othercode\remote_win\vps_tunnel\start_all.py --vps 49.233.189.223 --vps-pass <VPS_PASS> --password <PANEL_PASS> --port 8081 --vps-port 9091
+```
+
+（复用 `start_all.py`，仅端口参数不同；也可经活着的 9090 面板用 `cli.py shell`
+远程触发同一条命令。）
+
+**控制端使用**（与 9090 完全一致，只换端口）：
+
+```bash
+cd vps_tunnel
+python cli.py --server http://49.233.189.223:9091 --password <PANEL_PASS> shell "nvidia-smi"
+```
+
+**训练场景的三个实操注意**（实测踩坑）：
+1. 远端**中文输出会坏面板 JSON** → 长命令输出重定向到文件，再 base64 编码取回；
+   被运行中进程占住的日志文件用 `FileStream + FileShare::ReadWrite` 读；
+2. 面板同步执行有 ~130s 超时 → 训练类长任务用
+   `Start-Process -WindowStyle Hidden ... -RedirectStandardOutput xx.log` 后台化，
+   面板只做发射与轮询；
+3. 该机有系统代理可直连 huggingface.co，**不要设 HF_ENDPOINT 镜像**
+   （镜像经代理会丢 hub 元数据头，下载反而失败）。
 
 ---
 

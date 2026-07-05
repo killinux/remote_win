@@ -98,7 +98,7 @@ def handle_tool_call(req_id, name, args):
             resp = send_to_blender(
                 BLENDER_HOST,
                 BLENDER_PORT,
-                {"type": "code", "code": args.get("code", "")},
+                {"type": "execute_code", "params": {"code": args.get("code", "")}},
             )
             text = f"Blender response:\n{json.dumps(resp, indent=2, ensure_ascii=False)}"
         elif name == "get_scene_info":
@@ -110,7 +110,7 @@ def handle_tool_call(req_id, name, args):
             resp = send_to_blender(
                 BLENDER_HOST,
                 BLENDER_PORT,
-                {"type": "code", "code": 'print("Hello from Claude!")'},
+                {"type": "execute_code", "params": {"code": 'print("Hello from Claude!")'}},
             )
             text = f"Connection OK!\n{json.dumps(resp, indent=2, ensure_ascii=False)}"
         else:
