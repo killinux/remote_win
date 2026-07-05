@@ -19,7 +19,31 @@ Mac ──► VPS (49.233.189.223, Linux 跳板) ──► Windows (Blender 3.6.
 
 ## 快速使用（方案二 + Blender MCP）
 
-### 远程 Windows 每次开机执行：
+### 远程 Windows 每次开机执行（推荐：一键 bat）：
+
+```bash
+E:\code\othercode\remote_win\vps_tunnel\start_boot.bat
+```
+
+一条命令同时拉起 9090（Blender 通道）+ 9091（训练通道）。密码从同目录
+`boot_secrets.bat` 读取（**不入库**，首次使用时手动创建一次）：
+
+```bat
+:: E:\code\othercode\remote_win\vps_tunnel\boot_secrets.bat
+set VPS_PASS=<VPS_PASS>
+set PANEL_PASS=<PANEL_PASS>
+```
+
+也可不建文件、直接传参：`start_boot.bat <VPS_PASS> <PANEL_PASS>`。
+
+Blender MCP（9876）不在 bat 里——它依赖人工打开 Blender 并点插件 Start，之后：
+
+```bash
+cd E:\code\othercode\remote_win\vps_tunnel
+python start_blender.py --vps 49.233.189.223 --vps-pass <VPS_PASS>
+```
+
+### 手动逐条启动（等价于 bat 做的事）：
 
 ```bash
 cd E:\code\othercode\remote_win\vps_tunnel
@@ -27,8 +51,8 @@ cd E:\code\othercode\remote_win\vps_tunnel
 # 启动 Web 控制面板 + 9090 隧道
 python start_all.py --vps 49.233.189.223 --vps-pass <VPS_PASS> --password <PANEL_PASS>
 
-# 启动 Blender MCP 9876 隧道（Blender 需先打开且 blender-mcp 已 Start）
-python start_blender.py --vps 49.233.189.223 --vps-pass <VPS_PASS>
+# 启动训练通道 + 9091 隧道
+python start_all.py --vps 49.233.189.223 --vps-pass <VPS_PASS> --password <PANEL_PASS> --port 8081 --vps-port 9091
 ```
 
 ### Mac 上使用：
